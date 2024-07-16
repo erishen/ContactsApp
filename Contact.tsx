@@ -1,5 +1,14 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { View, FlatList, Text, PermissionsAndroid, StyleSheet, TouchableOpacity, Linking, Alert } from 'react-native';
+import {
+  View,
+  FlatList,
+  Text,
+  PermissionsAndroid,
+  StyleSheet,
+  TouchableOpacity,
+  Linking,
+  Alert,
+} from 'react-native';
 import Contacts from 'react-native-contacts';
 
 const styles = StyleSheet.create({
@@ -9,7 +18,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 10
+    padding: 10,
   },
   left: {
     fontSize: 16,
@@ -17,25 +26,28 @@ const styles = StyleSheet.create({
   },
   right: {
     fontSize: 15,
-    color: 'green'
-  }
+    color: 'green',
+  },
 });
 
-const makePhoneCall = (phoneNumber) => {
+const makePhoneCall = phoneNumber => {
   let phoneUrl = `tel:${phoneNumber}`;
   Linking.canOpenURL(phoneUrl)
-    .then((supported) => {
+    .then(supported => {
       if (!supported) {
         Alert.alert('Error', `Unable to make a phone call ${phoneNumber}`);
       } else {
         return Linking.openURL(phoneUrl);
       }
     })
-    .catch((err) => console.error('An error occurred', err));
+    .catch(err => console.error('An error occurred', err));
 };
 
 const ContactItem = ({ item }) => {
   let { givenName = '', familyName = '', phoneNumbers = [] } = item;
+
+  givenName = givenName.trim();
+  familyName = familyName.trim();
 
   const newName = useMemo(() => {
     let name = '';
@@ -52,44 +64,49 @@ const ContactItem = ({ item }) => {
   }, [givenName, familyName]);
 
   const newPhoneNumber = useMemo(() => {
-    let phoneNumber = phoneNumbers?.[0]?.number.toString();
+    let phoneNumber = phoneNumbers?.[0]?.number || '';
+    phoneNumber = phoneNumber.trim();
 
-    if (phoneNumber.indexOf(')') !== -1) {
-      const phoneNumberArray = phoneNumber.split(')');
-      phoneNumber = phoneNumberArray?.[1];
+    if (phoneNumber !== '') {
+      if (phoneNumber.indexOf(')') !== -1) {
+        const phoneNumberArray = phoneNumber.split(')');
+        phoneNumber = phoneNumberArray?.[1];
+      }
+
+      if (phoneNumber.indexOf(' ') !== -1) {
+        const phoneNumberArray = phoneNumber.split(' ');
+        phoneNumber = phoneNumberArray?.[1];
+      }
+
+      if (phoneNumber.indexOf('+') !== -1) {
+        const phoneNumberArray = phoneNumber.split('+');
+        phoneNumber = phoneNumberArray?.[1];
+      }
     }
 
-    if (phoneNumber.indexOf(' ') !== -1) {
-      const phoneNumberArray = phoneNumber.split(' ');
-      phoneNumber = phoneNumberArray?.[1];
+    if (phoneNumber !== '' && phoneNumber.length === 11) {
+      return phoneNumber;
+    } else {
+      return '';
     }
-
-    if (phoneNumber.indexOf('+') !== -1) {
-      const phoneNumberArray = phoneNumber.split('+');
-      phoneNumber = phoneNumberArray?.[1];
-    }
-
-    phoneNumber = phoneNumber.trim()
-
-    return phoneNumber;
   }, [phoneNumbers]);
 
   const doClickPhoneNumber = () => {
-    makePhoneCall(newPhoneNumber)
-  }
+    makePhoneCall(newPhoneNumber);
+  };
 
-  return (
-    <View style={styles.row}>
-      <Text style={styles.left}>
-        {newName}
-      </Text>
-      <TouchableOpacity onPress={doClickPhoneNumber}>
-        <Text style={styles.right}>
-          {newPhoneNumber}
-        </Text>
-      </TouchableOpacity>
-    </View>
-  );
+  if (newPhoneNumber !== '') {
+    return (
+      <View style={styles.row}>
+        <Text style={styles.left}>{newName}</Text>
+        <TouchableOpacity onPress={doClickPhoneNumber}>
+          <Text style={styles.right}>{newPhoneNumber}</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  } else {
+    return null;
+  }
 };
 
 const Contact = () => {
